@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "./useReducedMotion";
 
-export function useCountUp(target: number, duration = 1600, delay = 0): number {
+export function useCountUp(target: number, duration = 1200, delay = 0): number {
   const [value, setValue] = useState(0);
   const raf = useRef<number | undefined>(undefined);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
+    if (reduced) {
+      setValue(target);
+      return;
+    }
     setValue(0);
     const timeout = setTimeout(() => {
       const start = performance.now();
@@ -21,7 +27,7 @@ export function useCountUp(target: number, duration = 1600, delay = 0): number {
       clearTimeout(timeout);
       if (raf.current) cancelAnimationFrame(raf.current);
     };
-  }, [target, duration, delay]);
+  }, [target, duration, delay, reduced]);
 
   return value;
 }
