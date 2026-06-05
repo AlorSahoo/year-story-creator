@@ -8,13 +8,14 @@ import { useReducedMotion } from "../useReducedMotion";
 
 export default function StreakGapCard({ spec }: { spec: StreakSpec }) {
   const reduced = useReducedMotion();
+  const hasGap = spec.gapDays !== null;
   const [beat, setBeat] = useState<0 | 1>(0);
 
   useEffect(() => {
-    if (reduced) return;
+    if (reduced || !hasGap) return;
     const t = setTimeout(() => setBeat(1), 3500);
     return () => clearTimeout(t);
-  }, [reduced]);
+  }, [reduced, hasGap]);
 
   return (
     <CardShell
@@ -45,22 +46,33 @@ export default function StreakGapCard({ spec }: { spec: StreakSpec }) {
             ) : (
               <>
                 {spec.gapCaption}
-                <br />
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.6, duration: 0.7 }}
-                  style={{ color: colors.text, fontWeight: 600 }}
-                >
-                  {spec.gapClosing}
-                </motion.span>
+                {spec.gapClosing ? (
+                  <>
+                    <br />
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1.6, duration: 0.7 }}
+                      style={{ color: colors.text, fontWeight: 600 }}
+                    >
+                      {spec.gapClosing}
+                    </motion.span>
+                  </>
+                ) : null}
               </>
             )}
           </motion.span>
         </AnimatePresence>
       }
     >
-      <Beat beat={beat} spec={spec} reduced={reduced} onSkip={() => setBeat(1)} />
+      <Beat
+        beat={beat}
+        spec={spec}
+        reduced={reduced}
+        onSkip={() => {
+          if (hasGap) setBeat(1);
+        }}
+      />
     </CardShell>
   );
 }
@@ -76,7 +88,8 @@ function Beat({
   reduced: boolean;
   onSkip: () => void;
 }) {
-  const days = useCountUp(beat === 0 ? spec.streakDays : spec.gapDays, 1200, 100);
+  const target = beat === 0 ? spec.streakDays : spec.gapDays ?? 0;
+  const days = useCountUp(target, 1200, 100);
   const accent = beat === 0 ? colors.green4 : colors.cool;
   return (
     <motion.div
@@ -127,7 +140,7 @@ function Beat({
           justifyContent: "center",
         }}
       >
-        {Array.from({ length: spec.streakDays }).map((_, i) => {
+        {Array.from({ length: Math.min(spec.streakDays, 60) }).map((_, i) => {
           const filled = beat === 0;
           return (
             <motion.div
