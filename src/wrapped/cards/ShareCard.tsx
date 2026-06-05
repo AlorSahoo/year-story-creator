@@ -319,9 +319,24 @@ function TradingCardFront({
         ))}
       </div>
 
+      {spec.back.anthemLine ? (
+        <div
+          style={{
+            marginTop: 6,
+            fontFamily: fonts.mono,
+            fontSize: 9,
+            color: colors.green4,
+            textAlign: "center",
+            letterSpacing: 1,
+          }}
+        >
+          {spec.back.anthemLine}
+        </div>
+      ) : null}
+
       <div
         style={{
-          marginTop: 10,
+          marginTop: spec.back.anthemLine ? 4 : 10,
           fontFamily: fonts.mono,
           fontSize: 9,
           color: colors.muted,
