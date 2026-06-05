@@ -16,7 +16,7 @@ import StreakGapCard from "./cards/StreakGapCard";
 import ShareCard from "./cards/ShareCard";
 import MergeConflictCard from "./cards/MergeConflictCard";
 import type { CardSpec, MergeConflictSpec, WrappedStory } from "@/adapters/types";
-import { getDemoFixture, type DemoKey } from "./fixtures";
+import { getDemoFixture, parseDataset, type DemoKey } from "./fixtures";
 
 function renderCard(spec: CardSpec, onRetry: () => void) {
   switch (spec.kind) {
@@ -57,10 +57,11 @@ class CardBoundary extends Component<{ children: ReactNode; onError: () => void 
 function parseDemoKey(search: string): DemoKey | null {
   const params = new URLSearchParams(search);
   const k = params.get("demo");
-  if (k === "empty" || k === "sparse" || k === "single" || k === "dense" || k === "broken" || k === "listening")
-    return k;
-  const ds = params.get("dataset");
+  const valid: DemoKey[] = ["empty", "sparse", "single", "dense", "broken", "listening", "empty-listening", "sparse-listening"];
+  if (k && (valid as string[]).includes(k)) return k as DemoKey;
+  const ds = params.get("data") ?? params.get("dataset");
   if (ds === "listening") return "listening";
+  if (ds === "commits") return null;
   return null;
 }
 
@@ -69,7 +70,13 @@ type DatasetKind = "commits" | "listening";
 function buildStory(demo: DemoKey | null): WrappedStory {
   const fix = getDemoFixture(demo);
   try {
-    if (!fix) return commitsAdapter(rawCommits);
+    if (!fix) {
+      // Default path: shape-sniff the bundled raw dataset.
+      const sniffed = parseDataset(rawCommits);
+      if (sniffed.kind === "commits") return commitsAdapter(sniffed.data);
+      if (sniffed.kind === "listening") return listeningAdapter(sniffed.data);
+      throw new Error("unknown shape");
+    }
     if (fix.kind === "commits") return commitsAdapter(fix.data);
     if (fix.kind === "listening") return listeningAdapter(fix.data);
     throw new Error("broken fixture");
@@ -256,7 +263,8 @@ function WrappedInner() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              const next: DatasetKind = demoKey === "listening" ? "commits" : "listening";
+              const isListening = demoKey === "listening" || demoKey === "empty-listening" || demoKey === "sparse-listening";
+              const next: DatasetKind = isListening ? "commits" : "listening";
               setDemoKey(next === "listening" ? "listening" : null);
               setCurrent(0);
             }}
@@ -273,7 +281,7 @@ function WrappedInner() {
               cursor: "pointer",
             }}
           >
-            {demoKey === "listening" ? "🎧 sound" : "● code"}
+            {demoKey === "listening" || demoKey === "empty-listening" || demoKey === "sparse-listening" ? "🎧 sound" : "● code"}
           </button>
           <button
             onClick={(e) => {
