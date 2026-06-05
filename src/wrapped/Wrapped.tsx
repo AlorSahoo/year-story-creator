@@ -59,8 +59,12 @@ function parseDemoKey(search: string): DemoKey | null {
   const k = params.get("demo");
   if (k === "empty" || k === "sparse" || k === "single" || k === "dense" || k === "broken" || k === "listening")
     return k;
+  const ds = params.get("dataset");
+  if (ds === "listening") return "listening";
   return null;
 }
+
+type DatasetKind = "commits" | "listening";
 
 function buildStory(demo: DemoKey | null): WrappedStory {
   const fix = getDemoFixture(demo);
