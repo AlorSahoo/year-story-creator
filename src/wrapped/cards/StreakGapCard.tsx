@@ -127,7 +127,7 @@ function Beat({
         {days}
       </motion.div>
       <motion.div animate={{ color: colors.text }} style={{ fontSize: 20, marginTop: 8 }}>
-        {beat === 0 ? "days straight" : "days quiet"}
+        {beat === 0 ? spec.streakUnitLabel : spec.gapUnitLabel ?? "days quiet"}
       </motion.div>
 
       <div

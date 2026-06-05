@@ -11,10 +11,8 @@ export default function ColdOpenCard({ spec }: { spec: ColdOpenSpec }) {
 
   useEffect(() => {
     if (reduced) return;
-    let t1: ReturnType<typeof setTimeout>;
     let iv: ReturnType<typeof setInterval>;
-    // blink for 600ms, then type
-    t1 = setTimeout(() => {
+    const t1 = setTimeout(() => {
       setPhase(1);
       let i = 0;
       iv = setInterval(() => {
@@ -50,7 +48,7 @@ export default function ColdOpenCard({ spec }: { spec: ColdOpenSpec }) {
     >
       {phase < 2 ? (
         <div style={{ fontSize: 13, color: colors.green4, wordBreak: "break-word", lineHeight: 1.5 }}>
-          <span style={{ color: colors.muted }}>$ </span>
+          <span style={{ color: colors.muted }}>{spec.prompt} </span>
           {typed}
           <span
             style={{
@@ -70,13 +68,7 @@ export default function ColdOpenCard({ spec }: { spec: ColdOpenSpec }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            style={{
-              fontFamily: fonts.sans,
-              fontSize: 36,
-              fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: -0.5,
-            }}
+            style={{ fontFamily: fonts.sans, fontSize: 36, fontWeight: 700, lineHeight: 1.1, letterSpacing: -0.5 }}
           >
             {spec.title}
           </motion.div>
