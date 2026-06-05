@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 interface WrappedState {
   hideRepoNames: boolean;
@@ -12,14 +12,14 @@ const Ctx = createContext<WrappedState | null>(null);
 export function WrappedStateProvider({ children }: { children: React.ReactNode }) {
   const [hideRepoNames, setHideRepoNames] = useState(false);
   const [dna, setDnaState] = useState({ a: "#39d353", b: "#3fb950" });
+
+  const setDna = useCallback((a: string, b: string) => {
+    setDnaState((prev) => (prev.a === a && prev.b === b ? prev : { a, b }));
+  }, []);
+
   const value = useMemo<WrappedState>(
-    () => ({
-      hideRepoNames,
-      setHideRepoNames,
-      dna,
-      setDna: (a, b) => setDnaState({ a, b }),
-    }),
-    [hideRepoNames, dna]
+    () => ({ hideRepoNames, setHideRepoNames, dna, setDna }),
+    [hideRepoNames, dna, setDna]
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
