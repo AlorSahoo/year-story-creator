@@ -16,21 +16,16 @@ export default function ShareCard({ spec }: { spec: ShareSpec }) {
   const [saved, setSaved] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const { hideRepoNames } = useWrappedState();
+  const { hidePrivateNames } = useWrappedState();
 
-  const footer = hideRepoNames
-    ? spec.footer.replace(/github\.com\/[^ ]+/, "github.com/private")
-    : spec.footer;
+  const footer = hidePrivateNames && spec.footerRedacted ? spec.footerRedacted : spec.footer;
   const patched: ShareSpec = { ...spec, footer };
 
-  // Privacy: scrub repo-name reference from back flags too.
-  const backPatched: ShareBack = hideRepoNames
+  const backPatched: ShareBack = hidePrivateNames
     ? {
         ...spec.back,
-        redFlags: spec.back.redFlags.map((f) =>
-          /one repo \d+%/.test(f) ? "gave my #1 repo a lot of myself" : f
-        ),
-        footer: spec.back.footer.replace(/github\.com\/[^ ]+/, "github.com/private"),
+        redFlags: spec.back.redFlagsRedacted ?? spec.back.redFlags,
+        footer: spec.back.footerRedacted ?? spec.back.footer,
       }
     : spec.back;
 
@@ -44,7 +39,7 @@ export default function ShareCard({ spec }: { spec: ShareSpec }) {
       const url = await toPng(node, { pixelRatio: 2, cacheBust: true });
       const slug = flipped
         ? `${spec.user.toLowerCase()}-${spec.backFilenameSuffix}-${spec.year}.png`
-        : `${spec.user.toLowerCase()}-year-in-code-${spec.year}.png`;
+        : `${spec.user.toLowerCase()}-${spec.frontFilenameSuffix}-${spec.year}.png`;
       const a = document.createElement("a");
       a.download = slug;
       a.href = url;
@@ -270,7 +265,7 @@ function TradingCardFront({
           letterSpacing: 1.5,
         }}
       >
-        <span>● GITHUB</span>
+        <span>{spec.brandTag}</span>
         <span>{spec.year}</span>
       </div>
 
