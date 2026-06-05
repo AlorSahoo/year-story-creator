@@ -188,6 +188,9 @@ function WrappedInner() {
 
   const currentSpec = cards[current];
   const isColdOpen = currentSpec?.kind === "cold-open";
+  const isShare = currentSpec?.kind === "share";
+  const isMerge = currentSpec?.kind === "merge-conflict";
+  const hideTapZones = isColdOpen || isShare || isMerge;
 
   return (
     <div
