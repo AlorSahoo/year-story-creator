@@ -59,8 +59,12 @@ function parseDemoKey(search: string): DemoKey | null {
   const k = params.get("demo");
   if (k === "empty" || k === "sparse" || k === "single" || k === "dense" || k === "broken" || k === "listening")
     return k;
+  const ds = params.get("dataset");
+  if (ds === "listening") return "listening";
   return null;
 }
+
+type DatasetKind = "commits" | "listening";
 
 function buildStory(demo: DemoKey | null): WrappedStory {
   const fix = getDemoFixture(demo);
@@ -235,31 +239,60 @@ function WrappedInner() {
           ))}
         </div>
 
-        {/* sound toggle */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            sound.toggle();
-          }}
-          title="--verbose"
-          aria-label="--verbose"
+        {/* dataset + sound toggles */}
+        <div
           style={{
             position: "absolute",
             top: "max(env(safe-area-inset-top), 16px)",
             right: 16,
-            background: "transparent",
-            border: `1px solid ${colors.border}`,
-            color: colors.muted,
-            fontFamily: fonts.mono,
-            fontSize: 11,
-            padding: "4px 10px",
-            borderRadius: 999,
-            cursor: "pointer",
+            display: "flex",
+            gap: 6,
             zIndex: 30,
           }}
         >
-          {sound.enabled ? "🔊 sound on" : "🔈 sound off"}
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const next: DatasetKind = demoKey === "listening" ? "commits" : "listening";
+              setDemoKey(next === "listening" ? "listening" : null);
+              setCurrent(0);
+            }}
+            title="swap dataset"
+            aria-label="swap dataset"
+            style={{
+              background: "transparent",
+              border: `1px solid ${colors.border}`,
+              color: colors.muted,
+              fontFamily: fonts.mono,
+              fontSize: 11,
+              padding: "4px 10px",
+              borderRadius: 999,
+              cursor: "pointer",
+            }}
+          >
+            {demoKey === "listening" ? "🎧 sound" : "● code"}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              sound.toggle();
+            }}
+            title="--verbose"
+            aria-label="--verbose"
+            style={{
+              background: "transparent",
+              border: `1px solid ${colors.border}`,
+              color: colors.muted,
+              fontFamily: fonts.mono,
+              fontSize: 11,
+              padding: "4px 10px",
+              borderRadius: 999,
+              cursor: "pointer",
+            }}
+          >
+            {sound.enabled ? "🔊" : "🔈"}
+          </button>
+        </div>
 
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
