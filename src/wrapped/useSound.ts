@@ -25,14 +25,15 @@ interface UseSound {
 const STORAGE_KEY = "wrapped:sound";
 
 export function useSound(): UseSound {
-  const [enabled, setEnabled] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
+  const [enabled, setEnabled] = useState<boolean>(false);
+  useEffect(() => {
     try {
-      return window.localStorage.getItem(STORAGE_KEY) === "1";
+      if (window.localStorage.getItem(STORAGE_KEY) === "1") setEnabled(true);
     } catch {
-      return false;
+      /* no-op */
     }
-  });
+  }, []);
+
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
 
