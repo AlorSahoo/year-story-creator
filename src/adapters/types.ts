@@ -1,6 +1,16 @@
 // Normalized story shape. Card components consume ONLY this — never raw dataset fields.
 
-export type CardKind = "cold-open" | "hero" | "clock" | "composition" | "devotion" | "streak" | "share";
+export type CardKind =
+  | "cold-open"
+  | "hero"
+  | "clock"
+  | "composition"
+  | "devotion"
+  | "streak"
+  | "share"
+  | "merge-conflict";
+
+export type StoryVariant = "normal" | "sparse" | "empty";
 
 export interface Series {
   label: string;
@@ -10,8 +20,10 @@ export interface Series {
 
 export interface ColdOpenSpec {
   kind: "cold-open";
-  commandLine: string; // monospace text typed
+  commandLine: string;
   title: string;
+  /** optional beat that fades in 600ms after the title (e.g. "Well. Almost.") */
+  postBeat?: string;
   cta: string;
 }
 
@@ -19,54 +31,69 @@ export interface HeroSpec {
   kind: "hero";
   eyebrow: string;
   value: number;
-  unit: string; // "commits shipped" or "minutes listened"
-  meta: string; // "across 27 repos"
-  caption: string; // "That's one commit every 4.7 waking hours."
+  unit: string;
+  meta: string;
+  caption: string;
+  /** Self-referential parody flex shown on Card 1 only. */
+  flexLine?: string;
+  flexFootnote?: string;
+  /** When true, render a single pulsing contribution square instead of the count-up. */
+  emptyHeroSquare?: boolean;
 }
 
 export interface ClockSpec {
   kind: "clock";
   eyebrow: string;
-  /** length 24, count of events per hour-of-day */
   hourCounts: number[];
-  /** every event timestamp in hours [0..24), in chronological order — used to rain dots in */
   eventHours: number[];
-  archetype: "Night Owl" | "Dawn Patrol" | "The Professional" | "Chaos Gremlin";
+  archetype: "Night Owl" | "Dawn Patrol" | "The Professional" | "Chaos Gremlin" | "The Sniper";
   caption: string;
 }
 
 export interface CompositionSpec {
   kind: "composition";
   eyebrow: string;
-  /** all segments summing to ~1 */
-  segments: Series[]; // value = share
-  caption: string; // "45% TypeScript. The blue runs deep."
+  segments: Series[];
+  caption: string;
 }
 
 export interface DevotionSpec {
   kind: "devotion";
   eyebrow: string;
-  primaryName: string; // repo or artist
-  /** 52 booleans — weeks with activity */
+  primaryName: string;
   weeks: boolean[];
-  weeksWith: number; // 41
-  weeksTotal: number; // 52
-  shareOfTotalPct: number; // 62
+  weeksWith: number;
+  weeksTotal: number;
+  shareOfTotalPct: number;
   flingName: string | null;
-  flingLine: string | null; // "Your fling: tax-scripts-2025. One commit. Never again."
+  flingLine: string | null;
 }
 
 export interface StreakSpec {
   kind: "streak";
   eyebrow: string;
   streakDays: number;
-  streakStartLabel: string; // "Feb 11"
+  streakStartLabel: string;
   streakCaption: string;
-  gapEyebrow: string; // LONGEST QUIET
-  gapDays: number;
-  gapRangeLabel: string; // "July 8–19"
-  gapCaption: string; // "And from July 8–19: nothing. Eleven days. The repos survived."
-  gapClosing: string; // "Good."
+  /** When null, the gap beat is skipped (e.g. streak <= 1 or no quiet stretch). */
+  gapEyebrow: string | null;
+  gapDays: number | null;
+  gapRangeLabel: string | null;
+  gapCaption: string | null;
+  gapClosing: string | null;
+}
+
+export interface ShareBack {
+  header: string; // "📋 PAIR PROGRAMMER WANTED"
+  est: string; // "est. 2026"
+  profileLine: string; // "avery, 1,842 commits. night owl. 45% typescript."
+  seeking: string;
+  greenFlags: string[];
+  redFlags: string[];
+  gagLine: string;
+  footer: string; // "apply within → github.com/avery"
+  greenLabel: string; // "🟢 green flags"
+  redLabel: string; // "🚩 red flags"
 }
 
 export interface ShareSpec {
@@ -76,10 +103,22 @@ export interface ShareSpec {
   archetype: string;
   stats: { label: string; value: string }[];
   footer: string;
-  hourCounts: number[]; // mini-clock art
-  dnaColors: [string, string]; // border gradient stops
+  hourCounts: number[];
+  dnaColors: [string, string];
+  back: ShareBack;
+  /** Title to use on the front when the deck is "Year Zero". */
+  frontTitleOverride?: string;
+  /** Slug suffix for the back-side download filename, e.g. "pair-wanted". */
+  backFilenameSuffix: string;
 }
 
+export interface MergeConflictSpec {
+  kind: "merge-conflict";
+  eyebrow: string;
+  title: string;
+  body: string;
+  cta: string;
+}
 
 export type CardSpec =
   | ColdOpenSpec
@@ -88,10 +127,12 @@ export type CardSpec =
   | CompositionSpec
   | DevotionSpec
   | StreakSpec
-  | ShareSpec;
+  | ShareSpec
+  | MergeConflictSpec;
 
 export interface WrappedStory {
   user: string;
   year: number;
+  variant: StoryVariant;
   cards: CardSpec[];
 }

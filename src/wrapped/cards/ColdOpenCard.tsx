@@ -65,20 +65,39 @@ export default function ColdOpenCard({ spec }: { spec: ColdOpenSpec }) {
           />
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{
-            fontFamily: fonts.sans,
-            fontSize: 36,
-            fontWeight: 700,
-            lineHeight: 1.1,
-            letterSpacing: -0.5,
-          }}
-        >
-          {spec.title}
-        </motion.div>
+        <div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{
+              fontFamily: fonts.sans,
+              fontSize: 36,
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: -0.5,
+            }}
+          >
+            {spec.title}
+          </motion.div>
+          {spec.postBeat ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9, duration: 0.6 }}
+              style={{
+                fontFamily: fonts.sans,
+                fontSize: 22,
+                fontWeight: 600,
+                color: colors.muted,
+                marginTop: 12,
+                fontStyle: "italic",
+              }}
+            >
+              {spec.postBeat}
+            </motion.div>
+          ) : null}
+        </div>
       )}
       <motion.div
         initial={{ opacity: 0 }}

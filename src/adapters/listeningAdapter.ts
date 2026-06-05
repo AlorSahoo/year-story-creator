@@ -1,4 +1,4 @@
-import type { WrappedStory, CardSpec } from "./types";
+import type { WrappedStory, CardSpec, ShareBack } from "./types";
 
 export interface RawListeningDataset {
   kind: "listening";
@@ -7,8 +7,8 @@ export interface RawListeningDataset {
   totalMinutes: number;
   totalArtists: number;
   genres: { name: string; share: number; color: string }[];
-  hourOfDayMinutes: number[]; // 24
-  dailyMinutes: number[]; // 365
+  hourOfDayMinutes: number[];
+  dailyMinutes: number[];
   topArtists: { name: string; minutes: number; weeklyMinutes: number[] }[];
   longestStreakDays: number;
   longestStreakStart: string;
@@ -107,6 +107,23 @@ export function listeningAdapter(raw: RawListeningDataset): WrappedStory {
     gapClosing: "Good.",
   });
 
+  // adjacent genre as complement (very rough — index+1 or wrap)
+  const adjacent = raw.genres[1]?.name ?? raw.genres[0]?.name ?? "ambient";
+  const bingeDays = raw.dailyMinutes.filter((m) => m > 240).length;
+
+  const back: ShareBack = {
+    header: "🎧 AUX CORD APPLICATIONS OPEN",
+    est: `est. ${raw.year}`,
+    profileLine: `${raw.user.toLowerCase()}, ${raw.totalMinutes.toLocaleString()} minutes. ${archetype.toLowerCase()}. ${Math.round(topGenre.share * 100)}% ${topGenre.name.toLowerCase()}.`,
+    seeking: `seeking: a daylight ${adjacent.toLowerCase()} listener. together we keep the playlist running.`,
+    greenFlags: [`showed up ${weeksWith} of 52 weeks`, "0 skips mid-song"],
+    redFlags: bingeDays > 0 ? [`${bingeDays} 4+ hour binges`, "one artist, ${sharePct}% of myself".replace("${sharePct}", String(sharePct))] : ["one artist owns me"],
+    gagLine: "compatibility with someone who shares aux without asking: 100%.",
+    footer: `apply within → ${raw.user.toLowerCase()}`,
+    greenLabel: "🟢 green flags",
+    redLabel: "🚩 red flags",
+  };
+
   cards.push({
     kind: "share",
     user: raw.user,
@@ -121,7 +138,9 @@ export function listeningAdapter(raw: RawListeningDataset): WrappedStory {
     footer: `${raw.user.toLowerCase()} · Year in Sound`,
     hourCounts: raw.hourOfDayMinutes,
     dnaColors: [topGenre.color, raw.genres[1]?.color ?? "#3fb950"],
+    back,
+    backFilenameSuffix: "aux-wanted",
   });
 
-  return { user: raw.user, year: raw.year, cards };
+  return { user: raw.user, year: raw.year, variant: "normal", cards };
 }
