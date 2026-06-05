@@ -342,8 +342,8 @@ function WrappedInner() {
           ) : null}
         </AnimatePresence>
 
-        {/* tap zones */}
-        {!isColdOpen ? (
+        {/* tap zones — disabled on share (so the card flip catches taps), cold-open (whole screen advances), and merge-conflict */}
+        {!hideTapZones ? (
           <>
             <div
               onClick={retreat}
@@ -370,12 +370,12 @@ function WrappedInner() {
               }}
             />
           </>
-        ) : (
+        ) : isColdOpen ? (
           <div
             onClick={advance}
             style={{ position: "absolute", inset: 0, zIndex: 10, cursor: "pointer" }}
           />
-        )}
+        ) : null}
 
         <AnimatePresence>
           {toast ? (
