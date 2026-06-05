@@ -457,6 +457,20 @@ function TradingCardBack({
       >
         {back.footer}
       </div>
+      {back.anthemLine ? (
+        <div
+          style={{
+            marginTop: 2,
+            fontFamily: fonts.mono,
+            fontSize: 9,
+            color: colors.green4,
+            textAlign: "center",
+            letterSpacing: 0.5,
+          }}
+        >
+          {back.anthemLine}
+        </div>
+      ) : null}
     </CardFrame>
   );
 }
