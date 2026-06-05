@@ -190,6 +190,8 @@ export function commitsAdapter(raw: RawCommitsDataset): WrappedStory {
       { label: "DEVOTION", value: `${weeksWith}/52 wks` },
     ],
     footer: `github.com/${raw.user.toLowerCase()} · Year in Code`,
+    hourCounts: raw.hourOfDayCommits,
+    dnaColors: [c.hex, langColor(raw.languages[1]?.name ?? "Other").hex],
   });
 
   return { user: raw.user, year: raw.year, cards };

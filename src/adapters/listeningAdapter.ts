@@ -119,6 +119,8 @@ export function listeningAdapter(raw: RawListeningDataset): WrappedStory {
       { label: "DEVOTION", value: `${weeksWith}/52 wks` },
     ],
     footer: `${raw.user.toLowerCase()} · Year in Sound`,
+    hourCounts: raw.hourOfDayMinutes,
+    dnaColors: [topGenre.color, raw.genres[1]?.color ?? "#3fb950"],
   });
 
   return { user: raw.user, year: raw.year, cards };

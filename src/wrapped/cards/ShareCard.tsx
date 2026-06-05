@@ -2,28 +2,42 @@ import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { colors, fonts } from "../theme";
-import type { CommitsDataset } from "../types";
+import type { ShareSpec } from "@/adapters/types";
+import { MiniClock } from "./MiniClock";
+import { useWrappedState } from "../state";
 
-export default function ShareCard({ data }: { data: CommitsDataset }) {
-  const ref = useRef<HTMLDivElement>(null);
+const CARD_W = 300;
+const CARD_H = 400;
+
+export default function ShareCard({ spec }: { spec: ShareSpec }) {
+  const cleanRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
-  const max = data.languages[0].share;
-  const topLangs = data.languages.slice(0, 3);
+  const [saved, setSaved] = useState(false);
+  const { hideRepoNames } = useWrappedState();
 
   async function download() {
-    if (!ref.current) return;
+    if (!cleanRef.current) return;
     setBusy(true);
     try {
-      if ((document as any).fonts?.ready) await (document as any).fonts.ready;
-      const url = await toPng(ref.current, { pixelRatio: 3, cacheBust: true });
+      const docFonts = (document as unknown as { fonts?: { ready: Promise<unknown> } }).fonts;
+      if (docFonts?.ready) await docFonts.ready;
+      const url = await toPng(cleanRef.current, { pixelRatio: 2, cacheBust: true });
       const a = document.createElement("a");
-      a.download = `${data.userName}-year-in-code-${data.year}.png`;
+      a.download = `${spec.user.toLowerCase()}-year-in-code-${spec.year}.png`;
       a.href = url;
       a.click();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2400);
     } finally {
       setBusy(false);
     }
   }
+
+  const footer = hideRepoNames
+    ? spec.footer.replace(/github\.com\/[^ ]+/, "github.com/private")
+    : spec.footer;
+  const patched: ShareSpec = { ...spec, footer };
+  const staticBorder = `linear-gradient(135deg, ${spec.dnaColors[0]} 0%, ${colors.green4} 50%, ${spec.dnaColors[1]} 100%)`;
 
   return (
     <div
@@ -35,154 +49,173 @@ export default function ShareCard({ data }: { data: CommitsDataset }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "40px 16px",
+        padding: "max(env(safe-area-inset-top), 64px) 16px max(env(safe-area-inset-bottom), 24px)",
         gap: 20,
-        overflow: "auto",
       }}
     >
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6 }}
-        style={{ width: 320, transformOrigin: "center top" }}
+        initial={{ rotateY: 90, opacity: 0 }}
+        animate={{ rotateY: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.1 }}
+        style={{ perspective: 1000 }}
       >
-        <div
-          ref={ref}
-          style={{
-            width: 320,
-            height: 568,
-            backgroundColor: colors.bg,
-            backgroundImage: `radial-gradient(circle, ${colors.border} 1px, transparent 1px)`,
-            backgroundSize: "18px 18px",
-            borderRadius: 16,
-            border: `1px solid ${colors.border}`,
-            padding: "28px 24px",
-            display: "flex",
-            flexDirection: "column",
-            position: "relative",
-            color: colors.text,
-            fontFamily: fonts.sans,
-          }}
-        >
-          <div
-            style={{
-              color: colors.muted,
-              fontFamily: fonts.mono,
-              fontSize: 12,
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-            }}
-          >
-            ● github
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: fonts.mono,
-                fontSize: 80,
-                fontWeight: 800,
-                color: colors.green4,
-                letterSpacing: -2,
-                lineHeight: 1,
-              }}
-            >
-              {data.totalCommits.toLocaleString()}
-            </div>
-            <div style={{ color: colors.muted, fontSize: 16, marginTop: 8 }}>commits</div>
-            <div style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}>
-              across {data.totalRepos} repos
-            </div>
-          </div>
-
-          <div style={{ height: 1, background: colors.border, margin: "12px 0" }} />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {topLangs.map((l, i) => (
-              <div key={l.name}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: 11,
-                    marginBottom: 3,
-                    fontFamily: fonts.mono,
-                  }}
-                >
-                  <span style={{ color: colors.text }}>{l.name}</span>
-                  <span style={{ color: colors.muted }}>{Math.round(l.share * 100)}%</span>
-                </div>
-                <div style={{ height: 5, background: colors.surface, borderRadius: 3 }}>
-                  <div
-                    style={{
-                      width: `${(l.share / max) * 100}%`,
-                      height: "100%",
-                      background: i === 0 ? colors.green4 : i === 1 ? colors.green3 : colors.green2,
-                      borderRadius: 3,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ height: 1, background: colors.border, margin: "16px 0 12px" }} />
-
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: colors.text,
-                letterSpacing: -0.5,
-              }}
-            >
-              {data.userName}
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: colors.muted,
-                marginTop: 2,
-                fontFamily: fonts.mono,
-              }}
-            >
-              Year in Code · {data.year}
-            </div>
-          </div>
-        </div>
+        <TradingCard spec={patched} animated />
       </motion.div>
+
+      {/* hidden static clone used for export */}
+      <div style={{ position: "absolute", left: -9999, top: 0 }} aria-hidden>
+        <div ref={cleanRef}>
+          <TradingCard spec={patched} animated={false} staticBorder={staticBorder} />
+        </div>
+      </div>
 
       <motion.button
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        onClick={download}
+        transition={{ delay: 0.7 }}
+        onClick={(e) => {
+          e.stopPropagation();
+          download();
+        }}
         disabled={busy}
+        whileTap={{ scale: 0.95 }}
         style={{
-          background: colors.green3,
+          background: saved ? colors.green4 : colors.green3,
           color: colors.bg,
           border: "none",
-          borderRadius: 8,
+          borderRadius: 999,
           padding: "12px 28px",
           fontFamily: fonts.sans,
-          fontSize: 15,
-          fontWeight: 600,
+          fontSize: 14,
+          fontWeight: 700,
           cursor: "pointer",
-          opacity: busy ? 0.6 : 1,
+          opacity: busy ? 0.7 : 1,
+          letterSpacing: 0.3,
+          position: "relative",
+          zIndex: 30,
         }}
       >
-        {busy ? "Generating…" : "Download share card"}
+        {busy ? "Generating…" : saved ? "saved ✓" : "Download share card"}
       </motion.button>
+    </div>
+  );
+}
+
+function TradingCard({
+  spec,
+  animated,
+  staticBorder,
+}: {
+  spec: ShareSpec;
+  animated: boolean;
+  staticBorder?: string;
+}) {
+  const animatedBorder = `linear-gradient(120deg, ${spec.dnaColors[0]}, ${colors.green4}, ${spec.dnaColors[1]}, ${colors.green4}, ${spec.dnaColors[0]})`;
+  return (
+    <div
+      style={{
+        width: CARD_W,
+        height: CARD_H,
+        borderRadius: 18,
+        padding: 2,
+        background: staticBorder ?? animatedBorder,
+        backgroundSize: staticBorder ? "100% 100%" : "300% 300%",
+        animation: animated && !staticBorder ? "holosweep 6s ease-in-out infinite" : undefined,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          borderRadius: 16,
+          background: colors.bg,
+          backgroundImage: `radial-gradient(circle, ${colors.border} 1px, transparent 1px)`,
+          backgroundSize: "16px 16px",
+          padding: "20px 22px",
+          display: "flex",
+          flexDirection: "column",
+          color: colors.text,
+          fontFamily: fonts.sans,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontFamily: fonts.mono,
+            fontSize: 11,
+            color: colors.muted,
+            letterSpacing: 1.5,
+          }}
+        >
+          <span>● GITHUB</span>
+          <span>{spec.year}</span>
+        </div>
+
+        <div style={{ marginTop: 10 }}>
+          <div
+            style={{
+              fontSize: 30,
+              fontWeight: 800,
+              letterSpacing: -1,
+              lineHeight: 1,
+              textTransform: "uppercase",
+            }}
+          >
+            {spec.user}
+          </div>
+          <div
+            style={{
+              fontFamily: fonts.mono,
+              fontSize: 11,
+              color: colors.green4,
+              marginTop: 4,
+              letterSpacing: 1,
+            }}
+          >
+            {spec.archetype}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 6 }}>
+          <MiniClock hourCounts={spec.hourCounts} accent={spec.dnaColors[0]} />
+        </div>
+
+        <div
+          style={{
+            marginTop: "auto",
+            borderTop: `1px solid ${colors.border}`,
+            paddingTop: 10,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            rowGap: 6,
+            columnGap: 14,
+            fontFamily: fonts.mono,
+            fontSize: 11,
+          }}
+        >
+          {spec.stats.map((s) => (
+            <div key={s.label} style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: colors.muted }}>{s.label}</span>
+              <span style={{ color: colors.text, fontVariantNumeric: "tabular-nums" }}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            marginTop: 10,
+            fontFamily: fonts.mono,
+            fontSize: 9,
+            color: colors.muted,
+            textAlign: "center",
+            letterSpacing: 1,
+          }}
+        >
+          {spec.footer}
+        </div>
+      </div>
+      <style>{`@keyframes holosweep { 0%,100% { background-position: 0% 50% } 50% { background-position: 100% 50% } }`}</style>
     </div>
   );
 }

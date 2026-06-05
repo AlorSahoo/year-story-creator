@@ -74,9 +74,12 @@ export interface ShareSpec {
   user: string;
   year: number;
   archetype: string;
-  stats: { label: string; value: string }[]; // ["COMMITS","1,842"] etc
-  footer: string; // "github.com/avery · Year in Code"
+  stats: { label: string; value: string }[];
+  footer: string;
+  hourCounts: number[]; // mini-clock art
+  dnaColors: [string, string]; // border gradient stops
 }
+
 
 export type CardSpec =
   | ColdOpenSpec
