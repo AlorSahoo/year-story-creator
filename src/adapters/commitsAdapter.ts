@@ -112,7 +112,6 @@ function numberWord(n: number) {
   return words[n] ?? String(n);
 }
 
-/** Sort with deterministic alphabetical tie-break. */
 function rankBy<T>(arr: T[], score: (t: T) => number, name: (t: T) => string): T[] {
   return [...arr].sort((a, b) => {
     const s = score(b) - score(a);
@@ -121,9 +120,7 @@ function rankBy<T>(arr: T[], score: (t: T) => number, name: (t: T) => string): T
   });
 }
 
-/** Build a normalized story from raw commits. Detects variant and emits guards. */
 export function commitsAdapter(rawIn: RawCommitsDataset): WrappedStory {
-  // Coerce + defaults — hostile input safe.
   const raw: RawCommitsDataset = {
     kind: "commits",
     user: typeof rawIn?.user === "string" && rawIn.user ? rawIn.user : "you",
@@ -162,11 +159,9 @@ export function commitsAdapter(rawIn: RawCommitsDataset): WrappedStory {
   const sortedLangs = rankBy(raw.languages, (l) => l.commits, (l) => l.name);
   const sortedRepos = rankBy(raw.topRepos, (r) => r.commits, (r) => r.name);
 
-  // Variant detection
   const variant: StoryVariant = raw.totalCommits === 0 ? "empty" : raw.totalCommits < 10 ? "sparse" : "normal";
 
   if (variant === "empty") return buildEmptyStory(raw);
-
   return buildNormalStory(raw, sortedLangs, sortedRepos, variant);
 }
 
@@ -180,12 +175,12 @@ function buildNormalStory(
 
   cards.push({
     kind: "cold-open",
+    prompt: "$",
     commandLine: `git log --since="${raw.year}-01-01" --until="${raw.year}-12-31" --pretty=oneline`,
     title: `${raw.user}'s Year in Code.`,
     cta: "tap to begin",
   });
 
-  // Hero
   const wakingHours = 16;
   const perCommitHrs = (365 * wakingHours) / raw.totalCommits;
   let heroCaption = `That's one commit every ${perCommitHrs.toFixed(1)} waking hours.`;
@@ -201,7 +196,6 @@ function buildNormalStory(
     flexFootnote: "*of 1.",
   });
 
-  // Clock
   const archetype: Archetype = variant === "sparse" ? "The Sniper" : classifyArchetype(raw.hourOfDayCommits);
   const afterMidnight = raw.hourOfDayCommits[0] + raw.hourOfDayCommits[1] + raw.hourOfDayCommits[2] + raw.hourOfDayCommits[3];
   let clockCaption =
@@ -218,14 +212,11 @@ function buildNormalStory(
     caption: clockCaption,
   });
 
-  // Composition
   const top = sortedLangs[0] ?? { name: "Other", commits: 0, share: 1 };
   const c = langColor(top.name);
   const isMono = sortedLangs.length <= 1;
   const segments = isMono
-    ? [
-        { label: top.name, value: 1, color: c.hex },
-      ]
+    ? [{ label: top.name, value: 1, color: c.hex }]
     : sortedLangs.map((l) => ({ label: l.name, value: l.share, color: langColor(l.name).hex }));
   cards.push({
     kind: "composition",
@@ -234,7 +225,6 @@ function buildNormalStory(
     caption: isMono ? `100% ${top.name}. A purist.` : `${pct(top.share)}% ${top.name}. The ${c.word} runs deep.`,
   });
 
-  // Devotion
   const repo = sortedRepos[0];
   let fling: { name: string; commits: number } | undefined;
   if (repo) {
@@ -242,27 +232,26 @@ function buildNormalStory(
     const weeksWith = weeks.filter(Boolean).length;
     const shareOfTotal = raw.totalCommits > 0 ? Math.round((repo.commits / raw.totalCommits) * 100) : 100;
     fling = sortedRepos.slice(1).find((r) => r.commits === 1);
-
-    let flingLine: string | null = fling ? `Your fling: ${fling.name}. One commit. Never again.` : null;
-    if (sortedRepos.length === 1) flingLine = null;
+    const flingLine: string | null = fling ? `Your fling: ${fling.name}. One commit. Never again.` : null;
 
     cards.push({
       kind: "devotion",
       eyebrow: sortedRepos.length === 1 ? "THE ONLY REPO YOU TOUCHED" : "THE REPO THAT HAD YOUR HEART",
       primaryName: repo.name,
+      privateName: "your #1 repo",
       weeks,
       weeksWith,
       weeksTotal: 52,
-      shareOfTotalPct: sortedRepos.length === 1 ? 100 : shareOfTotal,
+      weeksLine: `You came back ${weeksWith} of 52 weeks.`,
+      shareLine: `${sortedRepos.length === 1 ? 100 : shareOfTotal}% of everything you shipped lived here.`,
       flingName: fling?.name ?? null,
-      flingLine:
-        sortedRepos.length === 1
-          ? "One repo. 100% devotion. Monogamy looks good on you."
-          : flingLine,
+      flingLine: sortedRepos.length === 1 ? "One repo. 100% devotion. Monogamy looks good on you." : flingLine,
+      flingLineWhenHidden: fling ? "Your fling: a one-commit repo. Never again." : sortedRepos.length === 1 ? "One repo. 100% devotion. Monogamy looks good on you." : null,
+      privacyHideLabel: "hide repo names",
+      privacyHiddenLabel: "✓ repo names hidden",
     });
   }
 
-  // Streak + gap (with guards)
   const gap = findLongestZeroGap(raw.dailyCommits);
   if (raw.longestStreakDays <= 1) {
     cards.push({
@@ -271,11 +260,13 @@ function buildNormalStory(
       streakDays: Math.max(1, raw.longestStreakDays),
       streakStartLabel: fmtShortDate(raw.longestStreakStart),
       streakCaption: "You don't do streaks. You make appearances.",
+      streakUnitLabel: "days straight",
       gapEyebrow: null,
       gapDays: null,
       gapRangeLabel: null,
       gapCaption: null,
       gapClosing: null,
+      gapUnitLabel: null,
     });
   } else if (gap.len === 0) {
     cards.push({
@@ -284,11 +275,13 @@ function buildNormalStory(
       streakDays: raw.longestStreakDays,
       streakStartLabel: fmtShortDate(raw.longestStreakStart),
       streakCaption: `You started ${fmtShortDate(raw.longestStreakStart)} and didn't stop.`,
+      streakUnitLabel: "days straight",
       gapEyebrow: "365 FOR 365",
       gapDays: 0,
       gapRangeLabel: "no quiet days",
       gapCaption: "365 for 365. Please drink water.",
       gapClosing: "",
+      gapUnitLabel: "days quiet",
     });
   } else {
     cards.push({
@@ -300,19 +293,18 @@ function buildNormalStory(
         variant === "sparse"
           ? "Mostly quiet this year. The repos survived. They always do."
           : `You started ${fmtShortDate(raw.longestStreakStart)} and didn't stop.`,
+      streakUnitLabel: "days straight",
       gapEyebrow: "LONGEST QUIET",
       gapDays: gap.len,
       gapRangeLabel: rangeLabel(gap.start, gap.len, raw.year),
       gapCaption: `And from ${rangeLabel(gap.start, gap.len, raw.year)}: nothing. ${numberWord(gap.len)} days. The repos survived.`,
       gapClosing: "Good.",
+      gapUnitLabel: "days quiet",
     });
   }
 
-  // Share + back side
   const weeksWith = repo ? repo.weeklyCommits.filter((n) => n > 0).length : 0;
-  cards.push(
-    buildShareCard(raw, sortedLangs, sortedRepos, archetype, weeksWith, gap, fling)
-  );
+  cards.push(buildShareCard(raw, sortedLangs, sortedRepos, archetype, weeksWith, gap, fling));
 
   return { user: raw.user, year: raw.year, variant, cards };
 }
@@ -329,7 +321,6 @@ function buildShareCard(
   const top = sortedLangs[0] ?? { name: "Other", commits: 0, share: 1 };
   const c = langColor(top.name);
 
-  // Stats
   const stats = [
     { label: "COMMITS", value: fmt(raw.totalCommits) },
     { label: "REPOS", value: String(Math.max(1, raw.totalRepos)) },
@@ -337,7 +328,6 @@ function buildShareCard(
     { label: "DEVOTION", value: `${weeksWith}/52 wks` },
   ];
 
-  // Back-side strings
   const tc = TIME_COMPLEMENT[archetype];
   const seeking = `seeking: a ${tc.partner} ${langComplement(top.name)} dev. ${tc.line}.`;
   const afterMidnight =
@@ -352,13 +342,21 @@ function buildShareCard(
   greenFlags.push("0 commits abandoned mid-streak");
 
   const redFlags: string[] = [];
-  if (afterMidnight > 0) redFlags.push(`${fmt(afterMidnight)} commits after midnight`);
+  const redFlagsRedacted: string[] = [];
+  if (afterMidnight > 0) {
+    redFlags.push(`${fmt(afterMidnight)} commits after midnight`);
+    redFlagsRedacted.push(`${fmt(afterMidnight)} commits after midnight`);
+  }
   const topRepo = sortedRepos[0];
   if (topRepo && raw.totalCommits > 0) {
     const sharePct = Math.round((topRepo.commits / raw.totalCommits) * 100);
     redFlags.push(`gave one repo ${sharePct}% of myself`);
+    redFlagsRedacted.push("gave my #1 repo a lot of myself");
   }
-  if (raw.longestStreakDays > 7) redFlags.push(`${raw.longestStreakDays}-day benders`);
+  if (raw.longestStreakDays > 7) {
+    redFlags.push(`${raw.longestStreakDays}-day benders`);
+    redFlagsRedacted.push(`${raw.longestStreakDays}-day benders`);
+  }
   void fling;
 
   const back: ShareBack = {
@@ -368,23 +366,28 @@ function buildShareCard(
     seeking,
     greenFlags: greenFlags.slice(0, 3),
     redFlags: redFlags.slice(0, 3),
+    redFlagsRedacted: redFlagsRedacted.slice(0, 3),
     gagLine: "compatibility with someone who reviews PRs within the hour: 100%.",
     footer: `apply within → github.com/${raw.user.toLowerCase()}`,
+    footerRedacted: `apply within → github.com/private`,
     greenLabel: "🟢 green flags",
     redLabel: "🚩 red flags",
   };
 
   return {
     kind: "share",
+    brandTag: "● GITHUB",
     user: raw.user,
     year: raw.year,
     archetype: `${archetype} · ${raw.longestStreakDays}-Day Streak`,
     stats,
     footer: `github.com/${raw.user.toLowerCase()} · Year in Code`,
+    footerRedacted: `github.com/private · Year in Code`,
     hourCounts: raw.hourOfDayCommits,
     dnaColors: [c.hex, langColor(sortedLangs[1]?.name ?? "Other").hex],
     back,
     backFilenameSuffix: "pair-wanted",
+    frontFilenameSuffix: "year-in-code",
   };
 }
 
@@ -392,6 +395,7 @@ function buildEmptyStory(raw: RawCommitsDataset): WrappedStory {
   const cards: CardSpec[] = [];
   cards.push({
     kind: "cold-open",
+    prompt: "$",
     commandLine: `git log --since="${raw.year}-01-01" --until="${raw.year}-12-31" --pretty=oneline`,
     title: `${raw.user}'s Year in Code.`,
     postBeat: "Well. Almost.",
@@ -414,6 +418,7 @@ function buildEmptyStory(raw: RawCommitsDataset): WrappedStory {
     meta: "",
     caption: "Every graph you've ever admired started exactly here.",
     emptyHeroSquare: true,
+    emptyLabel: "day 1",
   });
 
   const back: ShareBack = {
@@ -425,12 +430,14 @@ function buildEmptyStory(raw: RawCommitsDataset): WrappedStory {
     redFlags: ["untested"],
     gagLine: "compatibility with someone who reviews PRs within the hour: 100%.",
     footer: `apply within → github.com/${raw.user.toLowerCase()}`,
+    footerRedacted: `apply within → github.com/private`,
     greenLabel: "🟢 green flags",
     redLabel: "🚩 red flags",
   };
 
   cards.push({
     kind: "share",
+    brandTag: "● GITHUB",
     user: raw.user,
     year: raw.year,
     archetype: "Day One",
@@ -441,11 +448,13 @@ function buildEmptyStory(raw: RawCommitsDataset): WrappedStory {
       { label: "STATUS", value: "open" },
     ],
     footer: `github.com/${raw.user.toLowerCase()} · Day One`,
+    footerRedacted: `github.com/private · Day One`,
     hourCounts: new Array(24).fill(0),
     dnaColors: ["#39d353", "#3fb950"],
     back,
     frontTitleOverride: `${raw.user.toUpperCase()} — Day One`,
     backFilenameSuffix: "day-one-wanted",
+    frontFilenameSuffix: "day-one",
   });
 
   return { user: raw.user, year: raw.year, variant: "empty", cards };
