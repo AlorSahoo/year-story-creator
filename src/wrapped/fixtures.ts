@@ -65,14 +65,124 @@ export const single: RawCommitsDataset = {
 
 export const dense = rawCommits;
 
-// "broken" — intentionally malformed
 export const broken = "{ this is not json — merge conflict <<<<<< HEAD" as unknown as RawCommitsDataset;
 
-export type DemoKey = "empty" | "sparse" | "single" | "dense" | "broken" | "listening";
+const listeningFixture: RawListeningDataset = {
+  kind: "listening",
+  user: "Avery",
+  year: 2026,
+  totalMinutes: 43_800,
+  totalArtists: 312,
+  genres: [
+    { name: "indie", share: 0.38 },
+    { name: "electronic", share: 0.24 },
+    { name: "hip-hop", share: 0.18 },
+    { name: "jazz", share: 0.12 },
+    { name: "rock", share: 0.08 },
+  ],
+  hourOfDayMinutes: (() => {
+    const w = [
+      1.6, 1.4, 0.8, 0.4, 0.3, 0.2, 0.4, 0.8, 1.4, 1.8, 2.2, 2.4, 2.2, 2.4, 2.6, 2.4, 2.0, 1.6, 1.6, 1.8, 2.4, 2.8, 2.6,
+      2.0,
+    ];
+    const sum = w.reduce((a, b) => a + b, 0);
+    return w.map((x) => Math.round((x / sum) * 43800));
+  })(),
+  dailyMinutes: (() => {
+    const a = zeros(365);
+    for (let i = 0; i < 365; i++) a[i] = i >= 189 && i <= 199 ? 0 : 100 + Math.round(Math.sin(i) * 30 + 40);
+    return a;
+  })(),
+  topArtists: [
+    {
+      name: "The Midnight",
+      minutes: 12_702,
+      weeklyMinutes: (() => {
+        const a = zeros(52);
+        for (let w = 0; w < 52; w++) a[w] = [5, 11, 19, 27, 35, 43, 49, 50, 51, 17, 28].includes(w) ? 0 : 140 + (w % 7) * 30;
+        return a;
+      })(),
+    },
+    {
+      name: "Phoebe Bridgers",
+      minutes: 4210,
+      weeklyMinutes: zeros(52).map((_, w) => (w % 3 === 0 ? 80 : 0)),
+    },
+  ],
+  mostReplayedTrack: { name: "Sunset", artist: "The Midnight", plays: 212 },
+  longestStreakDays: 73,
+  longestStreakStart: "2026-03-04",
+};
+
+export const emptyListening: RawListeningDataset = {
+  kind: "listening",
+  user: "Avery",
+  year: 2026,
+  totalMinutes: 0,
+  totalArtists: 0,
+  genres: [],
+  hourOfDayMinutes: zeros(24),
+  dailyMinutes: zeros(365),
+  topArtists: [],
+  longestStreakDays: 0,
+  longestStreakStart: "2026-01-01",
+};
+
+export const sparseListening: RawListeningDataset = {
+  kind: "listening",
+  user: "Avery",
+  year: 2026,
+  totalMinutes: 42,
+  totalArtists: 1,
+  genres: [{ name: "ambient", share: 1.0 }],
+  hourOfDayMinutes: (() => {
+    const a = zeros(24);
+    a[23] = 14;
+    a[0] = 18;
+    a[1] = 10;
+    return a;
+  })(),
+  dailyMinutes: (() => {
+    const a = zeros(365);
+    [40, 90, 180, 250].forEach((d) => (a[d] = 10));
+    return a;
+  })(),
+  topArtists: [
+    {
+      name: "Tycho",
+      minutes: 42,
+      weeklyMinutes: (() => {
+        const a = zeros(52);
+        a[6] = 12;
+        a[12] = 8;
+        a[26] = 10;
+        a[36] = 12;
+        return a;
+      })(),
+    },
+  ],
+  mostReplayedTrack: { name: "Awake", artist: "Tycho", plays: 7 },
+  longestStreakDays: 1,
+  longestStreakStart: "2026-06-15",
+};
+
+export type DemoKey =
+  | "empty"
+  | "sparse"
+  | "single"
+  | "dense"
+  | "broken"
+  | "listening"
+  | "empty-listening"
+  | "sparse-listening";
 
 export function getDemoFixture(
   key: DemoKey | null
-): { kind: "commits"; data: RawCommitsDataset } | { kind: "broken" } | { kind: "listening"; data: RawListeningDataset } | null {
+):
+  | { kind: "commits"; data: RawCommitsDataset }
+  | { kind: "broken" }
+  | { kind: "listening"; data: RawListeningDataset }
+  | null {
   switch (key) {
     case "empty":
       return { kind: "commits", data: empty };
@@ -86,49 +196,42 @@ export function getDemoFixture(
       return { kind: "broken" };
     case "listening":
       return { kind: "listening", data: listeningFixture };
+    case "empty-listening":
+      return { kind: "listening", data: emptyListening };
+    case "sparse-listening":
+      return { kind: "listening", data: sparseListening };
     default:
       return null;
   }
 }
 
-const listeningFixture: RawListeningDataset = {
-  kind: "listening",
-  user: "Avery",
-  year: 2026,
-  totalMinutes: 41_280,
-  totalArtists: 312,
-  genres: [
-    { name: "Indie", share: 0.42, color: "#39d353" },
-    { name: "Electronic", share: 0.28, color: "#58a6ff" },
-    { name: "Jazz", share: 0.18, color: "#dea584" },
-    { name: "Other", share: 0.12, color: "#8b949e" },
-  ],
-  hourOfDayMinutes: (() => {
-    const w = [
-      1.4, 1.0, 0.6, 0.3, 0.2, 0.2, 0.4, 0.8, 1.4, 1.8, 2.2, 2.4, 2.2, 2.4, 2.6, 2.4, 2.0, 1.6, 1.4, 1.8, 2.4, 2.8, 2.6,
-      2.0,
-    ];
-    const sum = w.reduce((a, b) => a + b, 0);
-    return w.map((x) => Math.round((x / sum) * 41280));
-  })(),
-  dailyMinutes: (() => {
-    const a = zeros(365);
-    for (let i = 0; i < 365; i++) a[i] = i >= 200 && i <= 214 ? 0 : 100 + Math.round(Math.sin(i) * 30 + 40);
-    return a;
-  })(),
-  topArtists: [
-    {
-      name: "The Midnight",
-      minutes: 8420,
-      weeklyMinutes: (() => {
-        const a = zeros(52);
-        for (let w = 0; w < 52; w++) a[w] = [5, 11, 19, 27, 35, 43, 49].includes(w) ? 0 : 120 + (w % 7) * 40;
-        return a;
-      })(),
-    },
-  ],
-  longestStreakDays: 73,
-  longestStreakStart: "2026-03-04",
-};
+/** Shape-sniff: detect dataset kind from raw JSON without trusting filename or .kind. */
+export function parseDataset(
+  raw: unknown
+):
+  | { kind: "commits"; data: RawCommitsDataset }
+  | { kind: "listening"; data: RawListeningDataset }
+  | { kind: "broken" } {
+  if (!raw || typeof raw !== "object") return { kind: "broken" };
+  const o = raw as Record<string, unknown>;
+  const hasCommits =
+    "totalCommits" in o ||
+    "dailyCommits" in o ||
+    "hourOfDayCommits" in o ||
+    Array.isArray(o.topRepos) ||
+    Array.isArray(o.languages);
+  const hasListening =
+    "totalMinutes" in o ||
+    "dailyMinutes" in o ||
+    "hourOfDayMinutes" in o ||
+    Array.isArray(o.topArtists) ||
+    Array.isArray(o.genres);
+  if (hasCommits && !hasListening) return { kind: "commits", data: raw as RawCommitsDataset };
+  if (hasListening && !hasCommits) return { kind: "listening", data: raw as RawListeningDataset };
+  // tie-break on explicit .kind
+  if (o.kind === "commits") return { kind: "commits", data: raw as RawCommitsDataset };
+  if (o.kind === "listening") return { kind: "listening", data: raw as RawListeningDataset };
+  return { kind: "broken" };
+}
 
 export { listeningFixture };

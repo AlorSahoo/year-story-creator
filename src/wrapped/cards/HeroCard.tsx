@@ -33,7 +33,7 @@ export default function HeroCard({ spec }: { spec: HeroSpec }) {
               border: `1px solid ${colors.green4}`,
             }}
           />
-          <div style={{ color: colors.muted, fontSize: 14, fontFamily: fonts.mono, letterSpacing: 1 }}>day 1</div>
+          <div style={{ color: colors.muted, fontSize: 14, fontFamily: fonts.mono, letterSpacing: 1 }}>{spec.emptyLabel ?? "day 1"}</div>
         </motion.div>
       </CardShell>
     );
